@@ -25,7 +25,7 @@ Copy the results to /usr/share/edrp/
 
 Uncomment the "Store.loadSystems()" and "Store.loadBodies()" in ScalatraBootstrap.scala
 
-When you first run edrp, your data will load.
+When you first run edrp, your data will load.  It will take some hours because ngram index.
 
 Make sure you comment those lines again, after your data is loaded into the database.
 
