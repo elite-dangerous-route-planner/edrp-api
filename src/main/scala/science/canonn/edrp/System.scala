@@ -10,4 +10,4 @@
 package science.canonn.edrp
 
 
-case class System(id: Long, name: String, coords: Seq[Double])
+case class System(id: Long, name: String, coords: Seq[Double], is_populated: Boolean)

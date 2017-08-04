@@ -11,7 +11,7 @@ package science.canonn.edrp
 
 import java.util.concurrent.TimeUnit
 
-import com.github.benmanes.caffeine.cache.{Cache, CacheLoader, Caffeine, LoadingCache}
+import com.github.benmanes.caffeine.cache.{CacheLoader, Caffeine, LoadingCache}
 import com.typesafe.config.{Config, ConfigFactory}
 import cz.alenkacz.db.postgresscala.Connection
 import cz.alenkacz.db.postgresscala.PostgresConnection
@@ -56,7 +56,8 @@ object Store {
             .map(_.trim)
             .map(_.stripPrefix("("))
             .map(_.stripSuffix(")"))
-            .map(_.toDouble))
+            .map(_.toDouble),
+          r("is_populated").bool)
       }), 20.seconds)
   }
 
