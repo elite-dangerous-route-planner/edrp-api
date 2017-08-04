@@ -1,5 +1,8 @@
 # edrp #
 
+![screenshot](https://raw.githubusercontent.com/ehartford/edrp-api/master/screenshot.png)
+
+
 ## Create a Database ##
 
 Postgresql 9.6
