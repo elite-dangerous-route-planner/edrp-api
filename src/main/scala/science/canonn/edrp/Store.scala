@@ -12,7 +12,7 @@ package science.canonn.edrp
 import java.util.concurrent.TimeUnit
 
 import com.github.benmanes.caffeine.cache.{Cache, CacheLoader, Caffeine, LoadingCache}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import cz.alenkacz.db.postgresscala.Connection
 import cz.alenkacz.db.postgresscala.PostgresConnection
 import org.json4s._
@@ -27,14 +27,14 @@ object Store {
 
   val connectionString = s"jdbc:postgresql://${Constants.db_host}:${Constants.db_port}/${Constants.db_name}?user=${Constants.db_user}&password=${Constants.db_pass}"
 
-  val config = ConfigFactory.parseString(
+  val config: Config = ConfigFactory.parseString(
         s"""
            |database {
            |  connectionString = "$connectionString"
            |}
          """.stripMargin).getConfig("database")
 
-  def withConnection[T](f: Connection => T) = {
+  def withConnection[T](f: Connection => T): T = {
     val connection = Await.result(PostgresConnection.fromConfig(config), 5.seconds)
     val r = f(connection)
     connection.close()
@@ -66,7 +66,7 @@ object Store {
 
   implicit val formats = DefaultFormats
 
-  def loadSystems = () => {
+  def loadSystems: ()=>Unit = () => {
     for (lines <- Source.fromFile(Constants.file_systems).getLines().drop(1).grouped(200)) {
       val values = lines.map(line => {
         val fields = line.split('|').map(_.trim)
@@ -80,39 +80,39 @@ object Store {
       }).mkString(", ")
       val insertsql = s"INSERT INTO system (id, name, coords, is_populated) VALUES $values ON CONFLICT (id) DO UPDATE SET name = excluded.name, coords = excluded.coords, is_populated = excluded.is_populated"
       println(insertsql)
-      withConnection(c=>execute(c,insertsql))
+      withConnection(execute(_,insertsql))
     }
   }
 
-  def loadBodies = () => {
+  def loadBodies: ()=>Unit = () => {
     for (lines <- Source.fromFile(Constants.file_bodies).getLines().grouped(200)) {
       val values = lines.map(line => {
         val n = parse(line).extract[Body]
         s"(${n.system_id},'${n.name.replace("'","''")}',to_timestamp(${n.updated_at}),${n.type_id.getOrElse(0)},'${(if(n.type_name == null) "" else n.type_name).replace("'","''")}',${n.distance_to_arrival.getOrElse(0)},${n.terraforming_state_id.getOrElse(0)},'${(if(n.terraforming_state_name == null) "" else n.terraforming_state_name).replace("'","''")}',${n.value})"
       }).mkString(", ")
       val insertsql = s"INSERT INTO body (system_id, name, updated_at, type_id, type_name, distance_to_arrival, terraforming_state_id, terraforming_state_name, value) VALUES $values ON CONFLICT (system_id, name) DO UPDATE SET updated_at = excluded.updated_at, type_id = excluded.type_id, type_name = excluded.type_name, distance_to_arrival = excluded.distance_to_arrival, terraforming_state_id = excluded.terraforming_state_id, terraforming_state_name = excluded.terraforming_state_name, value = excluded.value"
-      withConnection(c=>execute(c,insertsql))
+      withConnection(execute(_,insertsql))
     }
   }
 
   def systemTypeAhead(input: String): Seq[String] =
-     withConnection[Seq[System]](c=>querySystems(c,
-       s"select * from system where name ilike '$input%' order by name limit 10"))
-         .map(n => n.name)
+     withConnection[Seq[System]](querySystems(_,
+       s"SELECT * FROM system WHERE ngrams_vector(name) @@ '$input'::tsquery order by name limit 10;")).map(_.name)
 
   def getSystems(maxDistanceFromSol: Int = 1000,
                  maxDistanceToArrival: Int = 20000,
-                 minValue: Int = 2000000) = {
+                 minValue: Int = 2000000): Seq[System] = {
     val query = s"""
        |  select system.*
        |  from system join body on id = system_id
-       |  where system.coords <-> cube(array[0.0,0.0,0.0]) < $maxDistanceFromSol
+       |  where system.is_populated = 'false'
+       |    and system.coords <-> cube(array[0.0,0.0,0.0]) < $maxDistanceFromSol
        |    and body.distance_to_arrival < $maxDistanceToArrival
        |  group by system.id
        |  having sum(value) > $minValue
      """.stripMargin
 
-    withConnection[Seq[System]](c => querySystems(c, query))
+    withConnection[Seq[System]](querySystems(_, query))
   }
 
   lazy val systemCache: LoadingCache[(Int,Int,Int), Seq[System]] = Caffeine.newBuilder()

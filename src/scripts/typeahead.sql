@@ -27,16 +27,6 @@ begin
 end;
 $$;
 
-create or replace function ngrams_query(words text)
-  returns tsquery
-language 'plpgsql'
-immutable strict
-as $$
-begin
-  return array_to_string(ngrams(words), ' & ')::tsquery;
-end;
-$$;
-
 CREATE INDEX system_name_idx ON system USING GIN (ngrams_vector(name));
 
 SELECT name FROM system WHERE ngrams_vector(name) @@ 'thequery'::tsquery order by name limit 10;

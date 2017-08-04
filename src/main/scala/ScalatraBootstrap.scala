@@ -6,7 +6,7 @@ class ScalatraBootstrap extends LifeCycle {
 
   override def init(context: ServletContext) {
 
-    Store.loadSystems()
+    //Store.loadSystems()
     //Store.loadBodies()
 
     // bootstrap scalatra
