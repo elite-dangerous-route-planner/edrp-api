@@ -1,5 +1,7 @@
 # edrp #
 
+By CMDR Faldore
+
 ![screenshot](https://raw.githubusercontent.com/ehartford/edrp-api/master/screenshot.png)
 
 
