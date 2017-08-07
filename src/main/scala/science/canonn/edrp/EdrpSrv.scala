@@ -1,6 +1,7 @@
 package science.canonn.edrp
 
 import org.json4s.native.Serialization
+import org.scalatra.Ok
 
 class EdrpSrv extends EdrpStack {
 
@@ -23,11 +24,14 @@ class EdrpSrv extends EdrpStack {
   }
 
   get("/a/sys") {
+    val headers = Map("Cache-Control" -> "public",
+                      "Cache-Control" -> "max-age=86400")
+
     val dSol = if(params.contains("dSol")) params("dSol").toInt else 1000
     val dArr = if(params.contains("dArr")) params("dArr").toInt else 20000
     val mVal = if(params.contains("mVal")) params("mVal").toInt else 2000000
 
-    Serialization.write(Store.systemCache.get((dSol, dArr, mVal)))
+    Ok(Serialization.write(Store.systemCache.get((dSol, dArr, mVal))), headers)
   }
 }
 
