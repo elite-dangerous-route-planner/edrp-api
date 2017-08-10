@@ -7,5 +7,14 @@ html
   head
     title= title
   body
+    nav#w0.navbar-inverse.navbar-fixed-top.navbar(role='navigation')
+      .container
+        .navbar-header
+          a.navbar-brand(href='/')
+            img(src='images/logo.png')
+        #w0-collapse.collapse.navbar-collapse
+          ul#w1.navbar-nav.navbar-right.nav
+            li
+              a(href='edrp') Exploration Route Planner
     #content
       != body
