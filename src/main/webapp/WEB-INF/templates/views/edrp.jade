@@ -1,20 +1,301 @@
 - attributes("title") = "EDRP"
 
-link(href='/css/bootstrap.css')(rel='stylesheet')
-link(href='/css/font-awesome.min.css')(rel='stylesheet')
-link(href='/css/shared.min.css')(rel='stylesheet')
+
+
+.wrap
+  .container-fluid.container-main
+    ul.breadcrumb
+      li
+        a(href='/') Home
+      li.active Multi Hop Trade Route Finder
+    .page-header
+      h1 Multi Hop Trade Route Finder
+
+      .panel.panel-edrp
+        div(id='myDiv')(style='height:600px')
+
+      .panel.panel-eddb
+        .panel-heading.clearfix Multi Hop Trade Route Finder
+        .panel-body
+          .row
+            .col-sm-6
+              h3 Hops Settings
+              table.table-route-filter
+                tbody
+                  tr(select-implicit-commodities='', value-model='data.hopsSettings.implicitCommodities', ng-class="{'filter-enabled': data.hopsSettings.implicitCommodities.length}")
+                    td
+                      span.filter-label(title='Commodities you exclusively wanna trade.') Implicit Commodities
+                    td
+                      span.filter-value(ng-bind='data.hopsSettings.getImplicitCommoditiesText()')
+                  tr(select-ignored-commodities='', value-model='data.hopsSettings.ignoredCommodities', ng-class="{'filter-enabled': data.hopsSettings.ignoredCommodities.length}")
+                    td
+                      span.filter-label.filter-enabled(title='Commodities you wanna ignore altogether.') Ignored Commodities
+                    td
+                      span.filter-value.filter-enabled(ng-bind='data.hopsSettings.getIgnoredCommoditiesText()')
+                  tr(number-hop-distance='', number-max='150', value-model='data.hopsSettings.hopDistance')
+                    td
+                      span.filter-label(title='The maximum distance in ly between a buying and a selling station.') Max Hop Distance
+                    td
+                      span.filter-value
+                        span(ng-bind='data.hopsSettings.hopDistance')
+                        |  ly
+                  tr(number-hop-count='', value-model='data.hopsSettings.hopCount')
+                    td
+                      span.filter-label(title='How many hops you wanna get. One hop = a trade between two stations.') Hop Count
+                    td
+                      span.filter-value
+                        span(ng-bind='data.hopsSettings.hopCount')
+                        |  hops
+                  tr(toggle-bool='data.hopsSettings.avoidLoop', ng-class="{'filter-enabled': data.hopsSettings.avoidLoop}")
+                    td
+                      span.filter-label(title='Sometimes the best route is a loop. Enable to avoid this.') Avoid Loop
+                    td
+                      span.filter-value(ng-bind='data.hopsSettings.avoidLoop | yesno')
+                  tr(toggle-bool='data.hopsSettings.fuzzyMode', ng-class="{'filter-enabled': data.hopsSettings.fuzzyMode}")
+                    td
+                      span.filter-label(title='Adds some randomness, which may or may not increase your total profit.') Fuzzy Mode
+                    td
+                      span.filter-value(ng-bind='data.hopsSettings.fuzzyMode | yesno')
+                  tr(number-cargo-capacity='', value-model='data.hopsSettings.cargoCapacity')
+                    td
+                      span.filter-label(title='How much cargo in tons your ship can take.') Cargo Capacity
+                    td
+                      span.filter-value
+                        span(ng-bind='data.hopsSettings.cargoCapacity')
+                        |  t
+                  tr(number-credits='', value-model='data.hopsSettings.credits')
+                    td
+                      span.filter-label(title='How many credits you wanna spend initially.') Available Credits
+                    td
+                      span.filter-value
+                        span(ng-bind='data.hopsSettings.credits | number: 0')
+                        |  Cr
+                  tr(number-price-age='', value-model='data.hopsSettings.priceAge', ng-class="{'filter-enabled': data.hopsSettings.priceAge > 0}")
+                    td
+                      span.filter-label(title='The maximum EDDN age of the traded commodity.') Max Price Age
+                    td
+                      span.filter-value(ng-bind='data.hopsSettings.priceAge | priceAge')
+            .col-sm-6
+              .filter-group(ng-controller='StationFilterController')
+                h3 Station Filter
+                table.table-route-filter
+                  tbody
+                    tr(select-governments='', value-model='data.stationFilter.governments', ng-class="{'filter-enabled': data.stationFilter.governments.length}")
+                      td
+                        span.filter-label(title='Only trade between stations with the given governments.') Government
+                      td
+                        span.filter-value(ng-bind='data.stationFilter.getGovernmentsText()')
+                    tr(select-allegiances='', value-model='data.stationFilter.allegiances', ng-class="{'filter-enabled': data.stationFilter.allegiances.length}")
+                      td
+                        span.filter-label(title='Only trade between stations with the given allegiances.') Allegiance
+                      td
+                        span.filter-value(ng-bind='data.stationFilter.getAllegiancesText()') >
+                    tr(select-states='', value-model='data.stationFilter.states', ng-class="{'filter-enabled': data.stationFilter.states.length}")
+                      td
+                        span.filter-label(title='Only trade between stations with the given states.') State
+                      td
+                        span.filter-value(ng-bind='data.stationFilter.getStatesText()')
+                    tr(toggle-bool='data.systemFilter.skipPermit', ng-class="{'filter-enabled': !data.systemFilter.skipPermit}")
+                      td
+                        span.filter-label(title='Skip stations which are in a system that requires a permit.') No Permit Systems
+                      td
+                        span.filter-value(ng-bind='data.systemFilter.skipPermit | yesno')
+                    tr(toggle-landing-pad='data.stationFilter.landingPad', ng-class="{'filter-enabled': data.stationFilter.landingPad}")
+                      td
+                        span.filter-label(title='The minimum landing pad a station should have.') Landing Pad
+                      td
+                        span.filter-value(ng-bind='data.stationFilter.landingPad | landingPad')
+                    tr(number-station-distance='', value-model='data.stationFilter.distance', ng-class="{'filter-enabled': data.stationFilter.distance > 0}")
+                      td
+                        span.filter-label.filter-enabled(title='The maximum distance in ls between the arrival point and the station.') Distance
+                      td
+                        span.filter-value.filter-enabled(ng-bind='data.stationFilter.distance | stationDistance')
+                    tr(toggle-bool='data.stationFilter.includePlanetary', ng-class="{'filter-enabled': data.stationFilter.includePlanetary}")
+                      td
+                        span.filter-label(title='Includes planetary stations which require Horizons.')
+                          i.icon-planet(title='This is a planetary station. You need Horizons for access.', style='font-weight: normal !important;')
+                          |  Include Planetary
+                      td
+                        span.filter-value(ng-bind='data.stationFilter.includePlanetary | yesno')
+                    tr(select-powers='', value-model='data.systemFilter.powers', ng-class="{'filter-enabled': data.systemFilter.powers.length}")
+                      td
+                        span.filter-label(title='Only trade in controlled or exploited systems.') Powers
+                      td
+                        span.filter-value(ng-bind='data.systemFilter.getPowersText()')
+          .row
+            .col-xs-6.filter-group
+              h3 Origin System
+              input#w0(type='hidden', name='systemSelect', value='15044', ng-model='properties.systemId')
+            .col-xs-6.filter-group
+              h3 Origin Station (optional)
+              input#w1(type='hidden', name='stationSelect', value='12192')
+          .row
+            .col-xs-6.filter-group
+              h3 Target System (optional)
+              input#w2(type='hidden', name='targetSystemSelect', ng-model='properties.systemId')
+            .col-xs-6.clearfix
+              .route-hint.pull-right Hint: If you're logged in, your settings are saved!
+          p.semi-strong
+            strong Trade Along The Way!
+            |  Set your Target System and the Router Finder tries to give you trade opportunities along the way. Max Hop Distance should be at least 40ly. If the finder gets stuck, try to increase the Max
+            |                                             Hop Distance! Also, only systems and stations that actually have prices on EDDB can be selected!
+          hr
+          button.btn.btn-action.no-select(ng-click='findHops()', ng-disabled='!canFindHops() || isLoading')
+            i.fa.fa-connectdevelop
+            |  Find trade route
+          button.btn.btn-action(type='button', data-toggle='modal', data-target='#w3')
+            i.fa.fa-question-circle
+            |  Help
+          #w3.fade.modal(role='dialog', tabindex='-1')
+            .modal-dialog.modal-lg
+              .modal-content
+                .modal-header
+                  button.close(type='button', data-dismiss='modal', aria-hidden='true') ×
+                  |  Multi Hop Trade Route Finder
+                .modal-body
+                  ul
+                    li
+                      | Due to the possibility of wrong price data, you should ignore
+                      i Tobacco
+                      | ,
+                      i Slaves
+                      |  and
+                      i Imperial Slaves
+                      | !
+                    li
+                      | Starting in a
+                      i High Tech
+                      |  system gives you a very good chance of a profitable route!
+                    li
+                      | It is recommended to have a Max Hop Distance of at least 40ly to ensure a successful result.
+                    li
+                      | If you select a target system, the route finder will try to approach that target. It is very inlikely that it ends directly in the system you wanna go. Instead the route will most likely stop pretty close to
+                      | your target.
+                  p
+                    | This route finder is not actually calculating all possible route combinations. It is more a guessing system which works like this:
+                  ul
+                    li Find a commodity in your station or system with a very low buy price.
+                    li Find another station with a high sell price for that commodity.
+                    li Find another commodity in that station which is very cheap again.
+                  p
+                    | A very good station is where you sell high and buy low. Finding such a station gives me no information about the next hop. But chances are very good that it works out.
+                  p
+                    | Sometimes though, the algorithm hits a dead end or finds some low profit hops. In that case you should enable the
+                    strong fuzzy mode
+                    | . It adds some randomness in the calculation, which may or may not increase
+                    |                                                                     your total profit.
+                  p
+                    strong
+                      | Eventually, the Multi Hop Finder will give you a way better total profit than the Single Hop Finder. The Single Finder may find specific hops which give a better profit, but the selling station might not offer good buying opportunities, which lets you get less profit in the end.
+      .hops-result
+        div(ng-show='firstStart')
+          div(ng-show='locations.length > 0')
+            | Total Profit:
+            span(ng-bind='getTotalProfit() | number')
+            |  Cr
+        .hops-result-bottom.box(ng-show='locations.length == 0 && !isLoading && !firstStart')
+          .box-heading
+            | No hops could be found or we hit a dead end. Please weaken your filter and try to enable the fuzzy mode.
+        .location.animation(ng-repeat='location in locations')
+          span(ng-init='buyHop = hops[$index]')
+          span(ng-init='sellHop = hops[$index-1]')
+          .box
+            .box-heading
+              i.fa.fa-building-o
+              a(href='/station/{{location.station.id}}', ng-bind='location.station.name')
+              span(station-type-suffix='', station='location.station')
+              span.seperator
+                i.fa.fa-angle-right
+              i.fa.fa-dot-circle-o
+              a(href='/system/{{location.system.id}}', ng-bind='location.system.name')
+              span.seperator
+                i.fa.fa-angle-right
+              i.fa.fa-clipboard.copy-clipboard(title='Copy system name to clipboard', data-clipboard-text='{{location.system.name}}', data-placement='top')
+              span.pull-right
+                small(ng-bind='getOlder(buyHop.buyListing.collected_at, sellHop.sellListing.collected_at) | timestampDayAge')
+                span.seperator
+                  i.fa.fa-angle-right
+                span(ng-bind='location.station.distance_to_star | number | numberUnknown')
+                |  ls
+                span.seperator
+                  i.fa.fa-angle-right
+                |  Pad:
+                span(ng-bind='location.station.max_landing_pad_size | landingPadResult')
+            .box-body.clearfix
+              .result-locations.pull-left
+                span(ng-show='sellHop')
+                  i.fa.fa-angle-left.buySell-pre
+                  |                             Sell:
+                  span.commodity-count(ng-bind='sellHop.count')
+                  |  ×
+                  i.fa.fa-cube
+                  strong
+                    a(href='/commodity/{{sellHop.commodity.id}}', ng-bind='sellHop.commodity.name')
+                  |                                     for
+                  strong
+                    span(ng-bind='sellHop.sellListing.sell_price | number')
+                    |  Cr
+                  br
+                span(ng-show='buyHop')
+                  i.fa.fa-angle-right.buySell-pre
+                  |                             Buy:
+                  span.commodity-count(ng-bind='buyHop.count')
+                  |  ×
+                  i.fa.fa-cube
+                  strong
+                    a(href='/commodity/{{buyHop.commodity.id}}', ng-bind='buyHop.commodity.name')
+                  |                                     for
+                  strong
+                    span(ng-bind='buyHop.buyListing.buy_price | number')
+                    |  Cr
+                  small(ng-show='buyHop')
+                    | Supply:
+                    span(ng-bind='buyHop.buyListing.supply | number')
+              span.pull-right.buffer-left.text-right(ng-show='sellHop')
+                span.semi-strong
+                  | Unit Profit:
+                  strong(ng-bind='(sellHop.sellListing.sell_price - sellHop.buyListing.buy_price) | number')
+                  |  Cr
+                br
+                span.bigger
+                  | Profit:
+                  span(ng-bind='(sellHop.sellListing.sell_price * sellHop.count - sellHop.buyListing.buy_price * sellHop.count) | number')
+                  |  Cr
+          .hop-space.clearfix
+            i.fa.fa-arrow-down.pull-left
+            span.hop-space-distance(ng-show='buyHop')
+              span
+                span(ng-show='buyHop', ng-bind='buyHop.distance | number:2')
+                |  ly
+                i.fa.fa-long-arrow-right(ng-show='buyHop.targetSystem')
+                span(ng-show='buyHop.targetSystem')
+                  span(ng-bind='buyHop.targetSystemDistance | number:2')
+                  |  ly
+            i.fa.fa-arrow-down.pull-right
+        .box.hops-result-bottom(ng-show='locations.length > 0')
+          .box-heading.box-heading-standalone.clearfix
+            .pull-left.highlight
+              | Total Profit:
+              span(ng-bind='getTotalProfit() | number')
+              |  Cr
+            .pull-right.highlight.highlight-action(ng-click='!isLoading && loadMore()')
+              i.fa.fa-arrow-down
+              |  Load more!
+              i.fa.fa-arrow-down
+
+//script(src='/js/jquery.js')
+//script(src='/js/yii.js')
+//script(src='/js/edrpmain.js')
+//script(src='/js/clipboard.min.js')
+//script(src='/js/clipboard_linker.js')
+//script(src='/js/trade.js')
+//script(src='/js/ui-bootstrap-tpls.min.js')
+//script(src='/js/select.js')
+//script(src='/js/select2.min.js')
+//script(src='/js/bootstrap.js')
 
 script(src="/js/d3.v3.min.js")
 script(src="/js/three.min.js")
 script(src="/js/plotly-latest.min.js")
 script(src="/js/lodash.min.js")
 script(src="/js/edrp.js")
-
-.wrap
-  .container-fluid.container-main
-    .page-home
-      .page-header-wrapper
-        .page-header
-          h1 EDRP - Elite: Dangerous Route Planner
-      .panel.panel-edrp
-        div(id='myDiv')(style='height:600px')

@@ -33,5 +33,9 @@ class EdrpSrv extends EdrpStack {
 
     Ok(Serialization.write(Store.systemCache.get((dSol, dArr, mVal))), headers)
   }
+
+  get("/a/path") {
+
+  }
 }
 

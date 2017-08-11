@@ -6,6 +6,9 @@
 html
   head
     title= title
+    link(href='/css/ext/bootstrap.css')(rel='stylesheet')
+    link(href='/css/ext/font-awesome.min.css')(rel='stylesheet')
+    link(href='/css/shared.min.css')(rel='stylesheet')
   body
     nav#w0.navbar-inverse.navbar-fixed-top.navbar(role='navigation')
       .container
@@ -18,3 +21,7 @@ html
               a(href='edrp') Exploration Route Planner
     #content
       != body
+    script(src='/js/ext/jquery.js')
+    script(src='/js/ext/yii.js')
+    script(src='/js/ext/bootstrap.js')
+    script(src='/js/main.js')

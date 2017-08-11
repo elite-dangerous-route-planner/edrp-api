@@ -8,6 +8,7 @@ class ScalatraBootstrap extends LifeCycle {
 
     //Store.loadSystems()
     //Store.loadBodies()
+    Store.getPath()
 
     // bootstrap scalatra
     Store.systemCache.refresh((1000,20000,2000000))

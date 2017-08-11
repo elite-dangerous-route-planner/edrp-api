@@ -48,21 +48,41 @@ object Store {
 
   def querySystems(c: Connection, s: String): Seq[System] = {
     Await.result(c.query[System](s,
-      r => {
-        System(
-          r("id").long,
-          r("name").string,
-          r("coords").string.split(',')
-            .map(_.trim)
-            .map(_.stripPrefix("("))
-            .map(_.stripSuffix(")"))
-            .map(_.toDouble),
-          r("is_populated").bool)
-      }), 20.seconds)
+      r => { System(
+        r("id").long,
+        r("name").string,
+        r("coords").string.split(',')
+          .map(_.trim)
+          .map(_.stripPrefix("("))
+          .map(_.stripSuffix(")"))
+          .map(_.toDouble),
+        r("is_populated").bool
+      )}), 20.seconds)
   }
 
   def queryBodies(c: Connection, s: String): Seq[Body] = {
-    Await.result(c.query[Body](s, r => Body(r("system_id").long, r("name").string, r("updated_at").long, r("type_id").intOpt, r("type_name").string, r("distance_to_arrival").intOpt, r("terraforming_state_id").intOpt, r("terraforming_state_name").string, r("value").int)), 20.seconds)
+    Await.result(c.query[Body](s, r => Body(
+      r("system_id").long,
+      r("name").string,
+      r("updated_at").long,
+      r("type_id").intOpt,
+      r("type_name").string,
+      r("distance_to_arrival").intOpt,
+      r("terraforming_state_id").intOpt,
+      r("terraforming_state_name").string,
+      r("value").int
+    )), 20.seconds)
+  }
+
+  def queryPaths(c: Connection, s: String): Seq[PathResult] = {
+    Await.result(c.query[PathResult](s, r => PathResult(
+      r("system_id").long,
+      r("system_name").string,
+      r("name").string,
+      r("distance_to_arrival").intOpt,
+      r("type_name").string,
+      r("value").int
+    )), 20.seconds)
   }
 
   implicit val formats = DefaultFormats
@@ -102,7 +122,8 @@ object Store {
 
   def getSystems(maxDistanceFromSol: Int = 1000,
                  maxDistanceToArrival: Int = 20000,
-                 minValue: Int = 2000000): Seq[System] = {
+                 minValue: Int = 2000000,
+                 maxSystems: Int = 100): Seq[System] = {
     val query = s"""
        |  select system.*
        |  from system join body on id = system_id
@@ -111,10 +132,34 @@ object Store {
        |    and body.distance_to_arrival < $maxDistanceToArrival
        |  group by system.id
        |  having sum(value) > $minValue
+       |  limit $maxSystems
      """.stripMargin
 
     withConnection[Seq[System]](querySystems(_, query))
   }
+
+  def getNext(startSystem: Long = 17072, candidates: Seq[System]): Seq[PathResult] = {
+    val query = s"select * from nextSystem($startSystem, '{${candidates.map(_.id).mkString(",")}')"
+    withConnection[Seq[PathResult]](queryPaths(_, query))
+  }
+
+  def getPath(startSystem: Long = 17072, numSystems: Int = 200) = {
+    var systems = getSystems(maxSystems = numSystems).filter(_.id != startSystem)
+    val sb = StringBuilder.newBuilder
+    var next = getNext(startSystem, systems)
+    sb.append("\tname\tdistance_to_arrival\ttype_name\tvalue")
+    for(n <- 0 until numSystems) {
+      val h = next.head
+      sb.append(h.system_name + "\n")
+      for(b <- next) {
+        sb.append(s"\t${b.name}\t${b.distance_to_arrival}\t${b.type_name}\t${b.value}\n")
+      }
+      systems = systems.filter(_.id != next.head.system_id)
+      next = getNext(h.system_id, systems)
+    }
+    print(sb.toString())
+  }
+
 
   lazy val systemCache: LoadingCache[(Int,Int,Int), Seq[System]] = Caffeine.newBuilder()
     .maximumSize(10000)
