@@ -120,39 +120,49 @@ object Store {
      withConnection[Seq[System]](querySystems(_,
        s"SELECT * FROM system WHERE ngrams_vector(name) @@ '$input'::tsquery order by name limit 10;")).map(_.name)
 
-  def getSystems(maxDistanceFromSol: Int = 1000,
+  def getSystems(startSystem: Long = 17072,
+                 maxDistance: Int = 1000,
                  maxDistanceToArrival: Int = 20000,
                  minValue: Int = 2000000,
                  maxSystems: Int = 100): Seq[System] = {
     val query = s"""
-       |  select system.*
-       |  from system join body on id = system_id
-       |  where system.is_populated = 'false'
-       |    and system.coords <-> cube(array[0.0,0.0,0.0]) < $maxDistanceFromSol
-       |    and body.distance_to_arrival < $maxDistanceToArrival
-       |  group by system.id
-       |  having sum(value) > $minValue
-       |  limit $maxSystems
+       | select destination.*
+       | from system origin join system destination
+       |   on origin.coords <-> destination.coords < $maxDistance
+       | join body on destination.id = body.system_id
+       | where origin.id = $startSystem
+       |   and destination.id != origin.id
+       |   and destination.is_populated = 'false'
+       |   and body.distance_to_arrival < $maxDistanceToArrival
+       | group by destination.id
+       | having sum(body.value) > $minValue
+       | limit $maxSystems
      """.stripMargin
 
     withConnection[Seq[System]](querySystems(_, query))
   }
 
   def getNext(startSystem: Long = 17072, candidates: Seq[System]): Seq[PathResult] = {
-    val query = s"select * from nextSystem($startSystem, '{${candidates.map(_.id).mkString(",")}')"
+    val query = s"select * from nextSystem($startSystem, '{${candidates.map(_.id).mkString(",")}}')"
+    //println(query)
     withConnection[Seq[PathResult]](queryPaths(_, query))
   }
 
-  def getPath(startSystem: Long = 17072, numSystems: Int = 200) = {
-    var systems = getSystems(maxSystems = numSystems).filter(_.id != startSystem)
+  def getPath(startSystem: Long = 17072,
+              maxDistance: Int = 1000,
+              maxDistanceToArrival: Int = 1000,
+              minValue: Int = 2000000,
+              maxSystems: Int = 200,
+              ) = {
+    var systems = getSystems(startSystem, maxDistance, maxDistanceToArrival, minValue, maxSystems)
     val sb = StringBuilder.newBuilder
     var next = getNext(startSystem, systems)
-    sb.append("\tname\tdistance_to_arrival\ttype_name\tvalue")
-    for(n <- 0 until numSystems) {
+    sb.append("\tname    \tdistance_to_arrival\ttype_name\tvalue")
+    while(systems.length > 0) {
       val h = next.head
       sb.append(h.system_name + "\n")
       for(b <- next) {
-        sb.append(s"\t${b.name}\t${b.distance_to_arrival}\t${b.type_name}\t${b.value}\n")
+        sb.append(s"\t${b.name}    \t${b.distance_to_arrival.getOrElse(0)}\t${b.type_name}\t${b.value}\n")
       }
       systems = systems.filter(_.id != next.head.system_id)
       next = getNext(h.system_id, systems)
